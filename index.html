@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>LuxeFinds Scanner</title>
 
-  <!-- PWA & Icons -->
+  <!-- PWA Basics -->
   <link rel="manifest" href="./site.webmanifest">
-  <meta name="theme-color" content="#0f0f0f">
+  <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="LuxeFinds Scanner">
+  <meta name="apple-mobile-web-app-title" content="Luxe Scanner">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./android-chrome-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="./android-chrome-512x512.png">
@@ -25,22 +25,13 @@
       overflow: hidden;
       touch-action: manipulation;
     }
-    #container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-    }
-    #reader {
-      position: absolute;
-      inset: 0;
-      width: 100% !important;
-      height: 100% !important;
-    }
+    #container { position: relative; width: 100%; height: 100%; }
+    #reader { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
     #overlay {
       position: absolute;
       inset: 0;
+      background: rgba(0,0,0,0.6);
       pointer-events: none;
-      background: rgba(0,0,0,0.55);
       z-index: 2;
     }
     #viewfinder {
@@ -50,75 +41,60 @@
       transform: translate(-50%, -50%);
       width: 85vw;
       max-width: 420px;
-      aspect-ratio: 4 / 2.2;
+      aspect-ratio: 4 / 2;
       border: 4px solid #00ff9d;
       border-radius: 20px;
       box-shadow: 0 0 0 9999px rgba(0,0,0,0.65);
       pointer-events: none;
       z-index: 3;
     }
-    #status-bar {
+    #status {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      padding: 16px 24px;
-      background: rgba(0,0,0,0.7);
-      text-align: center;
-      font-size: 1rem;
-      z-index: 5;
-      backdrop-filter: blur(12px);
-    }
-    #result-popup {
-      position: absolute;
-      bottom: 22%;
+      top: 40px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(20,20,20,0.94);
-      backdrop-filter: blur(16px);
-      color: #fff;
-      padding: 24px 32px;
-      border-radius: 24px;
-      font-size: 1.5rem;
-      font-weight: 600;
-      max-width: 92%;
-      text-align: center;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
-      z-index: 10;
-      opacity: 0;
-      transition: opacity 0.5s ease, transform 0.5s ease;
-      pointer-events: none;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(10px);
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      font-weight: 500;
+      z-index: 5;
+      white-space: nowrap;
     }
-    #result-popup.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(-15px);
-    }
-    #result-code {
-      font-size: 2rem;
+    #success-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,255,157,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.8rem;
+      font-weight: bold;
       color: #00ff9d;
-      margin: 12px 0;
-      word-break: break-all;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+      z-index: 10;
     }
+    #success-overlay.show { opacity: 1; }
     #stop-btn {
       position: absolute;
-      bottom: 50px;
+      bottom: 60px;
       left: 50%;
       transform: translateX(-50%);
       padding: 16px 40px;
-      background: rgba(255,255,255,0.18);
+      background: rgba(255,50,50,0.7);
+      backdrop-filter: blur(10px);
       color: white;
-      border: 1px solid rgba(255,255,255,0.35);
+      border: none;
       border-radius: 60px;
       font-size: 1.2rem;
-      backdrop-filter: blur(12px);
+      font-weight: 600;
       cursor: pointer;
       z-index: 5;
-      transition: all 0.3s;
     }
-    #stop-btn:active {
-      background: rgba(255,255,255,0.3);
-      transform: translateX(-50%) scale(1.08);
-    }
+    #stop-btn:active { background: rgba(255,50,50,0.9); }
   </style>
 </head>
 <body>
@@ -128,68 +104,58 @@
     <div id="overlay"></div>
     <div id="viewfinder"></div>
 
-    <div id="status-bar">Kamera läuft – Barcode zentrieren</div>
+    <div id="status">Scan läuft – Barcode zentrieren</div>
 
-    <div id="result-popup">
-      <div>Scan erfolgreich</div>
-      <div id="result-code"></div>
-      <div style="font-size:0.95rem; opacity:0.85; margin-top:10px;">An Discord gesendet</div>
-    </div>
+    <div id="success-overlay">Scan erfolgreich</div>
 
     <button id="stop-btn">Stoppen</button>
   </div>
 
-  <!-- Echter Beep-Sound von freesound (zerolagtime/144418 – public domain, kurzer Scanner-Beep) -->
+  <!-- Echter kurzer Scanner-Beep (public domain / Pixabay-ähnlich, ca. 0.3s) -->
   <audio id="beep" preload="auto">
-    <source src="https://cdn.freesound.org/previews/144/144418_2613695-lq.mp3" type="audio/mpeg">
+    <source src="https://cdn.pixabay.com/audio/2022/03/24/audio_8d7b0d4d0a.mp3" type="audio/mpeg">
   </audio>
 
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
     const html5QrCode = new Html5Qrcode("reader");
     const beep = document.getElementById("beep");
-    const resultPopup = document.getElementById("result-popup");
-    const resultCode = document.getElementById("result-code");
-    const statusBar = document.getElementById("status-bar");
+    const successOverlay = document.getElementById("success-overlay");
+    const status = document.getElementById("status");
     let scanning = false;
 
-    const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1470520011096592415/QSAAy7JK_v83ymk8KlY2p8F5pjgnnSo5EQCFGv209KZN4sQNRqkRL-H6VzimoXfgMG_5";
+    const WEBHOOK = "https://discord.com/api/webhooks/1470520011096592415/QSAAy7JK_v83ymk8KlY2p8F5pjgnnSo5EQCFGv209KZN4sQNRqkRL-H6VzimoXfgMG_5";
 
     async function sendToDiscord(code) {
       try {
-        const payload = {
-          content: `**Neuer Scan:** \`${code}\` um ${new Date().toLocaleTimeString('de-DE')} (LuxeFinds Scanner)`
-        };
-        const response = await fetch(DISCORD_WEBHOOK, {
+        await fetch(WEBHOOK, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            content: `**Robin – Neuer Verkauf:** \`${code}\` um ${new Date().toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} (Affiliate-Scan)`
+          })
         });
-        if (!response.ok) throw new Error("Webhook-Fehler");
-      } catch (err) {
-        statusBar.textContent = "Webhook fehlgeschlagen: " + err.message;
-        statusBar.style.color = "#ff4d4d";
+      } catch (e) {
+        // Stille Fehler (Webhook nicht kritisch)
       }
     }
 
-    function showResult(text) {
-      resultCode.textContent = text;
-      resultPopup.classList.add("show");
+    function onScanSuccess(decodedText) {
+      successOverlay.classList.add("show");
       beep.currentTime = 0;
       beep.play().catch(() => {});
-
-      sendToDiscord(text); // Sofort an Discord senden
+      sendToDiscord(decodedText);
 
       setTimeout(() => {
-        resultPopup.classList.remove("show");
-      }, 5000);
+        successOverlay.classList.remove("show");
+      }, 3000); // 3 Sekunden sichtbar
     }
 
     const config = {
       fps: 15,
       qrbox: { width: 340, height: 180 },
       aspectRatio: 1.333,
-      showTorchButtonIfSupported: true,     // Torch-Button (Blitz) aktivieren!
+      showTorchButtonIfSupported: true,
       formatsToSupport: [
         Html5QrcodeSupportedFormats.EAN_13,
         Html5QrcodeSupportedFormats.EAN_8,
@@ -201,30 +167,29 @@
     html5QrCode.start(
       { facingMode: "environment" },
       config,
-      (decodedText) => showResult(decodedText),
-      () => {} // Fehler ignorieren
+      onScanSuccess,
+      () => {}
     ).then(() => {
       scanning = true;
-      statusBar.textContent = "Kamera läuft – Barcode zentrieren";
+      status.textContent = "Scan läuft – Barcode zentrieren";
     }).catch(err => {
-      statusBar.textContent = "Fehler: " + err.message;
-      statusBar.style.color = "#ff4d4d";
+      status.textContent = "Fehler: " + err.message;
+      status.style.color = "#ff4d4d";
     });
 
     document.getElementById("stop-btn").onclick = () => {
       if (scanning) {
         html5QrCode.stop().then(() => {
           scanning = false;
-          statusBar.textContent = "Scanner gestoppt";
+          status.textContent = "Scanner gestoppt";
         });
       }
     };
   </script>
 
-  <!-- Service Worker -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(console.error);
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
   </script>
 </body>
