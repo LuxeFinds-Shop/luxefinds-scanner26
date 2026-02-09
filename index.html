@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LuxeFinds Scanner</title>
+
+  <!-- PWA Icons & Manifest -->
+  <link rel="manifest" href="./site.webmanifest">
+  <meta name="theme-color" content="#111111">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="LuxeFinds Scanner">
+  <link rel="icon" type="image/png" sizes="192x192" href="./android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./android-chrome-512x512.png">
+
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      padding: 15px;
+      background: #111;
+      color: #eee;
+      text-align: center;
+    }
+    h2 {
+      margin: 10px 0 5px;
+    }
+    #reader {
+      width: 100%;
+      max-width: 640px;
+      margin: 15px auto;
+      border: 3px solid #4CAF50;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+    }
+    #result {
+      font-size: 1.5em;
+      margin: 20px 10px;
+      padding: 20px;
+      background: #222;
+      border-radius: 10px;
+      min-height: 80px;
+      word-break: break-all;
+    }
+    button {
+      padding: 14px 30px;
+      font-size: 1.2em;
+      margin: 10px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .status {
+      color: #8BC34A;
+      font-weight: bold;
+    }
+    small {
+      color: #aaa;
+      display: block;
+      margin: 5px 0 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🔍 LuxeFinds Scanner</h2>
+  <small>Nur klassische Strichcodes (EAN-13, EAN-8, UPC) – QR-Codes werden ignoriert</small>
+
+  <div id="reader"></div>
+  <div id="result">Positioniere einen Strichcode in der Mitte...</div>
+
+  <button onclick="stopScanning()">Scanner stoppen</button>
+
+  <!-- Beep-Sound (sehr einfach gehalten) -->
+  <audio id="beep" preload="auto">
+    <source src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ==" type="audio/wav">
+  </audio>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script>
+    const html5QrCode = new Html5Qrcode("reader");
+    const resultDiv = document.getElementById("result");
+    const beep = document.getElementById("beep");
+    let scanning = false;
+
+    function onScanSuccess(decodedText) {
+      resultDiv.innerHTML = `<b>Code:</b> <span class="status">${decodedText}</span><br><small>${new Date().toLocaleTimeString()}</small>`;
+      beep.currentTime = 0;
+      beep.play().catch(() => {}); // Beep abspielen, Fehler ignorieren
+    }
+
+    const scannerConfig = {
+      fps: 12,
+      qrbox: { width: 450, height: 220 },
+      aspectRatio: 1.5,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E
+      ]
+    };
+
+    html5QrCode.start(
+      { facingMode: "environment" },
+      scannerConfig,
+      onScanSuccess,
+      (err) => { /* leise Fehler ignorieren */ }
+    ).then(() => {
+      scanning = true;
+      resultDiv.textContent = "Kamera läuft – Strichcode scannen!";
+    }).catch(err => {
+      resultDiv.textContent = "Fehler: " + err;
+      console.error(err);
+    });
+
+    function stopScanning() {
+      if (scanning) {
+        html5QrCode.stop().then(() => {
+          scanning = false;
+          resultDiv.textContent = "Scanner gestoppt.";
+        }).catch(err => console.error(err));
+      }
+    }
+  </script>
+
+  <!-- Service Worker für PWA (optional) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .catch(err => console.log('Service Worker Fehler:', err));
+      });
+    }
+  </script>
+
+</body>
+</html>
